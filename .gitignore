@@ -1,0 +1,23 @@
+# Python / backend
+backend/.venv/
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/.env
+backend/market_data.db
+backend/market_data.db-wal
+backend/market_data.db-shm
+
+# Node / frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+frontend/.env*.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+.github/skills/

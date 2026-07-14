@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InvestApp — Design Presets</title>
+<style>
+  /* ============================================================
+     RESET & TABS
+     ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #050709;
+    color: #aaa;
+    padding: 16px;
+  }
+
+  .page-title {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    color: #ddd;
+    margin-bottom: 16px;
+    letter-spacing: 0.04em;
+  }
+
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 20px;
+  }
+  .tab-btn {
+    background: #111418;
+    color: #888;
+    border: 1px solid #22262c;
+    padding: 8px 24px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    transition: background 0.15s, color 0.15s;
+  }
+  .tab-btn:first-child { border-radius: 0; }
+  .tab-btn:last-child  { border-radius: 0; }
+  .tab-btn + .tab-btn { border-left: none; }
+  .tab-btn.active { background: #1a1e25; color: #e0e0e0; }
+  .tab-btn:hover { color: #ccc; }
+
+  .panel-wrap { display: none; }
+  .panel-wrap.active { display: block; }
+
+  /* ============================================================
+     PRESET A — Institutional Terminal (Bloomberg-style)
+     ============================================================ */
+  .preset-a {
+    --bg: #0a0c0e;
+    --panel: #0f1216;
+    --border: #1a1e24;
+    --text: #c8ccd2;
+    --muted: #5c6370;
+    --up: #1b8a5a;
+    --down: #c0392b;
+    --accent: #8b9bb4;
+  }
+  .preset-a * { border-radius: 0 !important; }
+
+  /* ============================================================
+     PRESET B — Exchange Board
+     ============================================================ */
+  .preset-b {
+    --bg: #070a0d;
+    --panel: #0b0e13;
+    --border: #1c2128;
+    --text: #dadde2;
+    --muted: #737a86;
+    --up: #1e8f55;
+    --down: #cc3a32;
+    --accent: #c8a030;
+  }
+  .preset-b * { border-radius: 0 !important; }
+
+  /* ============================================================
+     PRESET C — Swiss Minimal
+     ============================================================ */
+  .preset-c {
+    --bg: #11151b;
+    --panel: #181d25;
+    --border: #252b34;
+    --text: #e2e5ea;
+    --muted: #7c838f;
+    --up: #228b60;
+    --down: #c94a44;
+    --accent: #8096b0;
+  }
+  .preset-c * { border-radius: 0 !important; }
+
+  /* ============================================================
+     PRESET D — Steel & Slate
+     ============================================================ */
+  .preset-d {
+    --bg: #0d1116;
+    --panel: #13181e;
+    --border: #20262e;
+    --text: #d6dbe2;
+    --muted: #6d7888;
+    --up: #16a34a;
+    --down: #dc2626;
+    --accent: #7e94b0;
+  }
+  .preset-d * { border-radius: 0 !important; }
+
+  /* ============================================================
+     SHARED LAYOUT
+     ============================================================ */
+  .dashboard {
+    background: var(--bg);
+    min-height: 640px;
+    padding: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+    box-shadow: 0 0 0 1px var(--border);
+  }
+
+  /* ---- Top Bar ---- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 14px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    gap: 14px;
+  }
+  .topbar .logo {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .topbar .ticker-input {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .topbar .ticker-input input {
+    width: 80px;
+    height: 26px;
+    padding: 0 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    outline: none;
+  }
+  .topbar .ticker-input input:focus {
+    border-color: var(--muted);
+  }
+  .topbar .add-btn {
+    height: 26px;
+    width: 26px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .topbar .spacer { flex: 1; }
+  .topbar .market-status {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .topbar .market-status .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--up);
+    margin-right: 5px;
+  }
+
+  /* ---- Watchlist sidebar ---- */
+  .app-body {
+    display: flex;
+  }
+  .watchlist {
+    width: 140px;
+    min-width: 140px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .watchlist .wl-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    padding: 6px 10px 10px;
+  }
+  .watchlist .wl-item {
+    padding: 7px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    color: var(--text);
+  }
+  .watchlist .wl-item:hover {
+    background: var(--border);
+  }
+  .watchlist .wl-item.active {
+    border-left-color: var(--accent);
+    color: var(--accent);
+    background: var(--bg);
+  }
+  .watchlist .wl-item.placeholder {
+    color: var(--muted);
+    font-weight: 400;
+    font-style: italic;
+    cursor: default;
+    opacity: 0.5;
+  }
+
+  /* ---- Main grid ---- */
+  .main-content {
+    flex: 1;
+    padding: 12px;
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    grid-template-rows: auto auto auto auto;
+    gap: 10px;
+  }
+
+  .col-main  { grid-column: 1; display: flex; flex-direction: column; gap: 10px; }
+  .col-side  { grid-column: 2; grid-row: 1 / 5; display: flex; flex-direction: column; gap: 10px; }
+
+  /* ---- Panels ---- */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 12px 14px;
+  }
+  .panel-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 7px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ---- Quote Header ---- */
+  .quote-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .quote-header .price {
+    font-size: 32px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .quote-header .change {
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .quote-header .change.up { color: var(--up); }
+  .quote-header .change.down { color: var(--down); }
+  .quote-header .meta {
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    gap: 16px;
+    margin-top: 4px;
+  }
+
+  /* ---- Chart placeholder ---- */
+  .chart-placeholder {
+    height: 220px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .chart-placeholder .line-mock {
+    position: absolute;
+    bottom: 40px;
+    left: 0;
+    right: 0;
+    height: 60%;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 19px,
+      var(--border) 19px,
+      var(--border) 20px
+    );
+  }
+  .chart-placeholder .line-mock::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--accent) 8%, transparent) 100%);
+  }
+  .chart-placeholder .chart-label {
+    position: relative;
+    z-index: 1;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* ---- Stat row ---- */
+  .stat-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .stat-item {
+    flex: 1;
+    min-width: 70px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+  }
+  .stat-item .stat-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .stat-item .stat-value {
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+
+  /* ---- NBBO panel ---- */
+  .nbbo-rows { display: flex; flex-direction: column; gap: 5px; }
+  .nbbo-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    font-size: 11px;
+  }
+  .nbbo-row .side { font-weight: 600; letter-spacing: 0.05em; }
+  .nbbo-row .side.bid { color: var(--down); }
+  .nbbo-row .side.ask { color: var(--up); }
+  .nbbo-row .px { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .nbbo-row .sz {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Tape (horizontal strip) ---- */
+  .tape-strip {
+    overflow: hidden;
+    position: relative;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 8px 0;
+  }
+  .tape-strip .tape-row {
+    display: flex;
+    gap: 2px;
+    width: max-content;
+  }
+  .tape-strip .tape-deal {
+    flex: 0 0 auto;
+    padding: 4px 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .tape-strip .tape-deal .t-px { font-weight: 700; }
+  .tape-strip .tape-deal .t-px.up { color: var(--up); }
+  .tape-strip .tape-deal .t-px.down { color: var(--down); }
+  .tape-strip .tape-deal .t-sz { color: var(--muted); }
+  .tape-strip .tape-deal .t-tm { color: var(--muted); font-size: 10px; }
+
+  /* ---- Preset-specific nuances ---- */
+
+  /* A: Bloomberg extra density */
+  .preset-a .panel { padding: 8px 10px; }
+  .preset-a .panel-title { font-size: 9px; margin-bottom: 6px; padding-bottom: 5px; }
+  .preset-a .stat-item { padding: 5px 7px; }
+  .preset-a .stat-item .stat-value { font-size: 12px; }
+  .preset-a .topbar { height: 34px; }
+  .preset-a .quote-header .price { font-size: 28px; }
+
+  /* B: exchange board — amber accent */
+  .preset-b .topbar .add-btn { color: var(--accent); }
+  .preset-b .watchlist .wl-item.active { border-left-color: var(--accent); color: var(--accent); }
+  .preset-b .quote-header .price { font-size: 36px; }
+  .preset-b .tape-strip .tape-deal { border-color: var(--accent); border-color: var(--border); }
+
+  /* C: Swiss — more whitespace */
+  .preset-c .panel { padding: 14px 18px; }
+  .preset-c .panel-title { border-bottom: none; margin-bottom: 12px; padding-bottom: 0; }
+  .preset-c .main-content { gap: 14px; }
+  .preset-c .stat-item { padding: 10px 14px; }
+  .preset-c .stat-item .stat-value { font-size: 14px; }
+  .preset-c .topbar { height: 44px; padding: 0 18px; }
+  .preset-c .chart-placeholder { height: 240px; }
+  .preset-c .quote-header .price { font-size: 36px; }
+
+  /* D: Steel & Slate — balanced */
+  .preset-d .panel { padding: 12px 14px; }
+  .preset-d .main-content { gap: 10px; }
+  .preset-d .topbar { height: 40px; }
+
+  /* ---- Responsive note ---- */
+  .label-info {
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    opacity: 0.6;
+  }
+  .dashboard { position: relative; }
+
+  /* ---- Comparison container ---- */
+  .comparison-note {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 18px;
+    padding: 10px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">Design Presets — Preview</h1>
+
+<div class="tabs">
+  <button class="tab-btn active" data-preset="a">A · Institutional Terminal</button>
+  <button class="tab-btn"        data-preset="b">B · Exchange Board</button>
+  <button class="tab-btn"        data-preset="c">C · Swiss Minimal</button>
+  <button class="tab-btn"        data-preset="d">D · Steel & Slate</button>
+</div>
+
+<!-- ============================================================
+     PRESET A
+     ============================================================ -->
+<div class="panel-wrap active" id="preset-a">
+<div class="dashboard preset-a">
+  <span class="label-info">PRESET A</span>
+
+  <div class="topbar">
+    <span class="logo">InvestApp</span>
+    <div class="ticker-input">
+      <input type="text" value="MU" readonly>
+      <button class="add-btn">+</button>
+    </div>
+    <span class="spacer"></span>
+    <span class="market-status"><span class="dot"></span> MARKET OPEN</span>
+  </div>
+
+  <div class="app-body">
+    <div class="watchlist">
+      <div class="wl-label">WATCHLIST</div>
+      <div class="wl-item active">MU</div>
+      <div class="wl-item">AAPL</div>
+      <div class="wl-item">NVDA</div>
+      <div class="wl-item">MSFT</div>
+      <div class="wl-item placeholder">+ Add symbol</div>
+    </div>
+
+    <div class="main-content">
+      <div class="col-main">
+        <!-- Quote header -->
+        <div class="panel">
+          <div class="quote-header">
+            <span class="price">964.76</span>
+            <span class="change up">+12.43 (+1.31%)</span>
+          </div>
+          <div class="meta">
+            <span>MU · Micron Technology</span>
+            <span>NASDAQ</span>
+            <span>USD</span>
+          </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="chart-placeholder">
+          <div class="line-mock"></div>
+          <span class="chart-label">PRICE CHART</span>
+        </div>
+
+        <!-- Key Stats -->
+        <div class="panel">
+          <div class="panel-title">Key Statistics</div>
+          <div class="stat-row">
+            <div class="stat-item"><div class="stat-label">Open</div><div class="stat-value">958.20</div></div>
+            <div class="stat-item"><div class="stat-label">High</div><div class="stat-value">967.10</div></div>
+            <div class="stat-item"><div class="stat-label">Low</div><div class="stat-value">954.50</div></div>
+            <div class="stat-item"><div class="stat-label">Prev Close</div><div class="stat-value">952.33</div></div>
+            <div class="stat-item"><div class="stat-label">Volume</div><div class="stat-value">12.4M</div></div>
+          </div>
+        </div>
+
+        <!-- Time & Sales -->
+        <div class="panel">
+          <div class="panel-title">Time &amp; Sales</div>
+          <div class="tape-strip">
+            <div class="tape-row">
+              <div class="tape-deal"><span class="t-px up">964.76</span><span class="t-sz">100</span><span class="t-tm">10:59:01</span></div>
+              <div class="tape-deal"><span class="t-px up">964.37</span><span class="t-sz">100</span><span class="t-tm">10:58:52</span></div>
+              <div class="tape-deal"><span class="t-px up">963.76</span><span class="t-sz">100</span><span class="t-tm">10:58:28</span></div>
+              <div class="tape-deal"><span class="t-px up">963.06</span><span class="t-sz">100</span><span class="t-tm">10:58:04</span></div>
+              <div class="tape-deal"><span class="t-px up">962.54</span><span class="t-sz">200</span><span class="t-tm">10:57:50</span></div>
+              <div class="tape-deal"><span class="t-px up">961.90</span><span class="t-sz">100</span><span class="t-tm">10:57:33</span></div>
+              <div class="tape-deal"><span class="t-px up">961.40</span><span class="t-sz">150</span><span class="t-tm">10:57:12</span></div>
+              <div class="tape-deal"><span class="t-px up">960.88</span><span class="t-sz">100</span><span class="t-tm">10:56:55</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-side">
+        <!-- NBBO -->
+        <div class="panel">
+          <div class="panel-title">NBBO</div>
+          <div class="nbbo-rows">
+            <div class="nbbo-row"><span class="side ask">ASK</span><span class="px">964.99</span><span class="sz">500</span></div>
+            <div class="nbbo-row"><span class="side ask">ASK</span><span class="px">965.25</span><span class="sz">200</span></div>
+            <div class="nbbo-row"><span class="side bid">BID</span><span class="px">964.50</span><span class="sz">300</span></div>
+            <div class="nbbo-row"><span class="side bid">BID</span><span class="px">964.25</span><span class="sz">600</span></div>
+          </div>
+        </div>
+
+        <!-- Fundamentals -->
+        <div class="panel">
+          <div class="panel-title">Fundamentals</div>
+          <div class="stat-row" style="flex-direction:column;">
+            <div class="stat-item"><div class="stat-label">Market Cap</div><div class="stat-value">105.2B</div></div>
+            <div class="stat-item"><div class="stat-label">P/E Ratio</div><div class="stat-value">18.4</div></div>
+            <div class="stat-item"><div class="stat-label">EPS</div><div class="stat-value">52.38</div></div>
+            <div class="stat-item"><div class="stat-label">52W Range</div><div class="stat-value">620 – 1,120</div></div>
+            <div class="stat-item"><div class="stat-label">Div Yield</div><div class="stat-value">0.48%</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============================================================
+     PRESET B
+     ============================================================ -->
+<div class="panel-wrap" id="preset-b">
+<div class="dashboard preset-b">
+  <span class="label-info">PRESET B</span>
+
+  <div class="topbar">
+    <span class="logo">InvestApp</span>
+    <div class="ticker-input">
+      <input type="text" value="MU" readonly>
+      <button class="add-btn">+</button>
+    </div>
+    <span class="spacer"></span>
+    <span class="market-status"><span class="dot"></span> MARKET OPEN</span>
+  </div>
+
+  <div class="app-body">
+    <div class="watchlist">
+      <div class="wl-label">WATCHLIST</div>
+      <div class="wl-item active">MU</div>
+      <div class="wl-item">AAPL</div>
+      <div class="wl-item">NVDA</div>
+      <div class="wl-item">MSFT</div>
+      <div class="wl-item placeholder">+ Add symbol</div>
+    </div>
+
+    <div class="main-content">
+      <div class="col-main">
+        <div class="panel">
+          <div class="quote-header">
+            <span class="price">964.76</span>
+            <span class="change up">+12.43 (+1.31%)</span>
+          </div>
+          <div class="meta">
+            <span>MU · Micron Technology</span>
+            <span>NASDAQ</span>
+            <span>USD</span>
+          </div>
+        </div>
+
+        <div class="chart-placeholder">
+          <div class="line-mock"></div>
+          <span class="chart-label">PRICE CHART</span>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Key Statistics</div>
+          <div class="stat-row">
+            <div class="stat-item"><div class="stat-label">Open</div><div class="stat-value">958.20</div></div>
+            <div class="stat-item"><div class="stat-label">High</div><div class="stat-value">967.10</div></div>
+            <div class="stat-item"><div class="stat-label">Low</div><div class="stat-value">954.50</div></div>
+            <div class="stat-item"><div class="stat-label">Prev Close</div><div class="stat-value">952.33</div></div>
+            <div class="stat-item"><div class="stat-label">Volume</div><div class="stat-value">12.4M</div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Time &amp; Sales</div>
+          <div class="tape-strip">
+            <div class="tape-row">
+              <div class="tape-deal"><span class="t-px up">964.76</span><span class="t-sz">100</span><span class="t-tm">10:59:01</span></div>
+              <div class="tape-deal"><span class="t-px up">964.37</span><span class="t-sz">100</span><span class="t-tm">10:58:52</span></div>
+              <div class="tape-deal"><span class="t-px up">963.76</span><span class="t-sz">100</span><span class="t-tm">10:58:28</span></div>
+              <div class="tape-deal"><span class="t-px up">963.06</span><span class="t-sz">100</span><span class="t-tm">10:58:04</span></div>
+              <div class="tape-deal"><span class="t-px up">962.54</span><span class="t-sz">200</span><span class="t-tm">10:57:50</span></div>
+              <div class="tape-deal"><span class="t-px up">961.90</span><span class="t-sz">100</span><span class="t-tm">10:57:33</span></div>
+              <div class="tape-deal"><span class="t-px up">961.40</span><span class="t-sz">150</span><span class="t-tm">10:57:12</span></div>
+              <div class="tape-deal"><span class="t-px up">960.88</span><span class="t-sz">100</span><span class="t-tm">10:56:55</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-side">
+        <div class="panel">
+          <div class="panel-title">NBBO</div>
+          <div class="nbbo-rows">
+            <div class="nbbo-row"><span class="side ask">ASK</span><span class="px">964.99</span><span class="sz">500</span></div>
+            <div class="nbbo-row"><span class="side ask">ASK</span><span class="px">965.25</span><span class="sz">200</span></div>
+            <div class="nbbo-row"><span class="side bid">BID</span><span class="px">964.50</span><span class="sz">300</span></div>
+            <div class="nbbo-row"><span class="side bid">BID</span><span class="px">964.25</span><span class="sz">600</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Fundamentals</div>
+          <div class="stat-row" style="flex-direction:column;">
+            <div class="stat-item"><div class="stat-label">Market Cap</div><div class="stat-value">105.2B</div></div>
+            <div class="stat-item"><div class="stat-label">P/E Ratio</div><div class="stat-value">18.4</div></div>
+            <div class="stat-item"><div class="stat-label">EPS</div><div class="stat-value">52.38</div></div>
+            <div class="stat-item"><div class="stat-label">52W Range</div><div class="stat-value">620 – 1,120</div></div>
+            <div class="stat-item"><div class="stat-label">Div Yield</div><div class="stat-value">0.48%</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============================================================
+     PRESET C
+     ============================================================ -->
+<div class="panel-wrap" id="preset-c">
+<div class="dashboard preset-c">
+  <span class="label-info">PRESET C</span>
+
+  <div class="topbar">
+    <span class="logo">InvestApp</span>
+    <div class="ticker-input">
+      <input type="text" value="MU" readonly>
+      <button class="add-btn">+</button>
+    </div>
+    <span class="spacer"></span>
+    <span class="market-status"><span class="dot"></span> MARKET OPEN</span>
+  </div>
+
+  <div class="app-body">
+    <div class="watchlist">
+      <div class="wl-label">WATCHLIST</div>
+      <div class="wl-item active">MU</div>
+      <div class="wl-item">AAPL</div>
+      <div class="wl-item">NVDA</div>
+      <div class="wl-item">MSFT</div>
+      <div class="wl-item placeholder">+ Add symbol</div>
+    </div>
+
+    <div class="main-content">
+      <div class="col-main">
+        <div class="panel">
+          <div class="quote-header">
+            <span class="price">964.76</span>
+            <span class="change up">+12.43 (+1.31%)</span>
+          </div>
+          <div class="meta">
+            <span>MU · Micron Technology</span>
+            <span>NASDAQ</span>
+            <span>USD</span>
+          </div>
+        </div>
+
+        <div class="chart-placeholder">
+          <div class="line-mock"></div>
+          <span class="chart-label">PRICE CHART</span>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Key Statistics</div>
+          <div class="stat-row">
+            <div class="stat-item"><div class="stat-label">Open</div><div class="stat-value">958.20</div></div>
+            <div class="stat-item"><div class="stat-label">High</div><div class="stat-value">967.10</div></div>
+            <div class="stat-item"><div class="stat-label">Low</div><div class="stat-value">954.50</div></div>
+            <div class="stat-item"><div class="stat-label">Prev Close</div><div class="stat-value">952.33</div></div>
+            <div class="stat-item"><div class="stat-label">Volume</div><div class="stat-value">12.4M</div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Time &amp; Sales</div>
+          <div class="tape-strip">
+            <div class="tape-row">
+              <div class="tape-deal"><span class="t-px up">964.76</span><span class="t-sz">100</span><span class="t-tm">10:59:01</span></div>
+              <div class="tape-deal"><span class="t-px up">964.37</span><span class="t-sz">100</span><span class="t-tm">10:58:52</span></div>
+              <div class="tape-deal"><span class="t-px up">963.76</span><span class="t-sz">100</span><span class="t-tm">10:58:28</span></div>
+              <div class="tape-deal"><span class="t-px up">963.06</span><span class="t-sz">100</span><span class="t-tm">10:58:04</span></div>
+              <div class="tape-deal"><span class="t-px up">962.54</span><span class="t-sz">200</span><span class="t-tm">10:57:50</span></div>
+              <div class="tape-deal"><span class="t-px up">961.90</span><span class="t-sz">100</span><span class="t-tm">10:57:33</span></div>
+              <div class="tape-deal"><span class="t-px up">961.40</span><span class="t-sz">150</span><span class="t-tm">10:57:12</span></div>
+              <div class="tape-deal"><span class="t-px up">960.88</span><span class="t-sz">100</span><span class="t-tm">10:56:55</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-side">
+        <div class="panel">
+          <div class="panel-title">NBBO</div>
+          <div class="nbbo-rows">
+            <div class="nbbo-row"><span class="side ask">ASK</span><span class="px">964.99</span><span class="sz">500</span></div>
+            <div class="nbbo-row"><span class="side ask">ASK</span><span class="px">965.25</span><span class="sz">200</span></div>
+            <div class="nbbo-row"><span class="side bid">BID</span><span class="px">964.50</span><span class="sz">300</span></div>
+            <div class="nbbo-row"><span class="side bid">BID</span><span class="px">964.25</span><span class="sz">600</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Fundamentals</div>
+          <div class="stat-row" style="flex-direction:column;">
+            <div class="stat-item"><div class="stat-label">Market Cap</div><div class="stat-value">105.2B</div></div>
+            <div class="stat-item"><div class="stat-label">P/E Ratio</div><div class="stat-value">18.4</div></div>
+            <div class="stat-item"><div class="stat-label">EPS</div><div class="stat-value">52.38</div></div>
+            <div class="stat-item"><div class="stat-label">52W Range</div><div class="stat-value">620 – 1,120</div></div>
+            <div class="stat-item"><div class="stat-label">Div Yield</div><div class="stat-value">0.48%</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============================================================
+     PRESET D
+     ============================================================ -->
+<div class="panel-wrap" id="preset-d">
+<div class="dashboard preset-d">
+  <span class="label-info">PRESET D</span>
+
+  <div class="topbar">
+    <span class="logo">InvestApp</span>
+    <div class="ticker-input">
+      <input type="text" value="MU" readonly>
+      <button class="add-btn">+</button>
+    </div>
+    <span class="spacer"></span>
+    <span class="market-status"><span class="dot"></span> MARKET OPEN</span>
+  </div>
+
+  <div class="app-body">
+    <div class="watchlist">
+      <div class="wl-label">WATCHLIST</div>
+      <div class="wl-item active">MU</div>
+      <div class="wl-item">AAPL</div>
+      <div class="wl-item">NVDA</div>
+      <div class="wl-item">MSFT</div>
+      <div class="wl-item placeholder">+ Add symbol</div>
+    </div>
+
+    <div class="main-content">
+      <div class="col-main">
+        <div class="panel">
+          <div class="quote-header">
+            <span class="price">964.76</span>
+            <span class="change up">+12.43 (+1.31%)</span>
+          </div>
+          <div class="meta">
+            <span>MU · Micron Technology</span>
+            <span>NASDAQ</span>
+            <span>USD</span>
+          </div>
+        </div>
+
+        <div class="chart-placeholder">
+          <div class="line-mock"></div>
+          <span class="chart-label">PRICE CHART</span>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Key Statistics</div>
+          <div class="stat-row">
+            <div class="stat-item"><div class="stat-label">Open</div><div class="stat-value">958.20</div></div>
+            <div class="stat-item"><div class="stat-label">High</div><div class="stat-value">967.10</div></div>
+            <div class="stat-item"><div class="stat-label">Low</div><div class="stat-value">954.50</div></div>
+            <div class="stat-item"><div class="stat-label">Prev Close</div><div class="stat-value">952.33</div></div>
+            <div class="stat-item"><div class="stat-label">Volume</div><div class="stat-value">12.4M</div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Time &amp; Sales</div>
+          <div class="tape-strip">
+            <div class="tape-row">
+              <div class="tape-deal"><span class="t-px up">964.76</span><span class="t-sz">100</span><span class="t-tm">10:59:01</span></div>
+              <div class="tape-deal"><span class="t-px up">964.37</span><span class="t-sz">100</span><span class="t-tm">10:58:52</span></div>
+              <div class="tape-deal"><span class="t-px up">963.76</span><span class="t-sz">100</span><span class="t-tm">10:58:28</span></div>
+              <div class="tape-deal"><span class="t-px up">963.06</span><span class="t-sz">100</span><span class="t-tm">10:58:04</span></div>
+              <div class="tape-deal"><span class="t-px up">962.54</span><span class="t-sz">200</span><span class="t-tm">10:57:50</span></div>
+              <div class="tape-deal"><span class="t-px up">961.90</span><span class="t-sz">100</span><span class="t-tm">10:57:33</span></div>
+              <div class="tape-deal"><span class="t-px up">961.40</span><span class="t-sz">150</span><span class="t-tm">10:57:12</span></div>
+              <div class="tape-deal"><span class="t-px up">960.88</span><span class="t-sz">100</span><span class="t-tm">10:56:55</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-side">
+        <div class="panel">
+          <div class="panel-title">NBBO</div>
+          <div class="nbbo-rows">
+            <div class="nbbo-row"><span class="side ask">ASK</span><span class="px">964.99</span><span class="sz">500</span></div>
+            <div class="nbbo-row"><span class="side ask">ASK</span><span class="px">965.25</span><span class="sz">200</span></div>
+            <div class="nbbo-row"><span class="side bid">BID</span><span class="px">964.50</span><span class="sz">300</span></div>
+            <div class="nbbo-row"><span class="side bid">BID</span><span class="px">964.25</span><span class="sz">600</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Fundamentals</div>
+          <div class="stat-row" style="flex-direction:column;">
+            <div class="stat-item"><div class="stat-label">Market Cap</div><div class="stat-value">105.2B</div></div>
+            <div class="stat-item"><div class="stat-label">P/E Ratio</div><div class="stat-value">18.4</div></div>
+            <div class="stat-item"><div class="stat-label">EPS</div><div class="stat-value">52.38</div></div>
+            <div class="stat-item"><div class="stat-label">52W Range</div><div class="stat-value">620 – 1,120</div></div>
+            <div class="stat-item"><div class="stat-label">Div Yield</div><div class="stat-value">0.48%</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="comparison-note" style="color:#8b94a3;">
+  ↑ Switch between presets using the tabs above. All four share the same layout &amp; data — only color, spacing, and density differ.
+</div>
+
+<script>
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel-wrap').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('preset-' + btn.dataset.preset).classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>
