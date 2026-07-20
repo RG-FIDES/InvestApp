@@ -4,23 +4,22 @@ import { useMarketStore } from "../lib/store";
 import { fmtPrice, fmtInt, fmtET } from "../lib/format";
 
 const EXCHANGE_LABELS: Record<string, string> = {
-  XNAS: "NSDQ",
-  XNYS: "NYSE",
-  ARCX: "ARCA",
-  BATS: "BATS",
-  XCHI: "CHIX",
-  XCIS: "CISX",
-  XAMS: "AEB",
-  XLON: "LSE",
-  XTKS: "TSE",
-  XHKG: "HKEX",
-  XPAR: "EUR",
-  XFRA: "FRA",
+  XNAS: "NSDQ", XNYS: "NYSE", ARCX: "ARCA", BATS: "BATS",
+  XCHI: "CHIX", XCIS: "CISX", XAMS: "AEB", XLON: "LSE",
+  XTKS: "TSE", XHKG: "HKEX", XPAR: "EUR", XFRA: "FRA",
 };
 function fmtExchange(ex: string | null | undefined): string {
   if (!ex) return "";
   const e = ex.toUpperCase().trim();
   return EXCHANGE_LABELS[e] ?? e.slice(0, 4);
+}
+
+/** Condition code label: @ = regular sale, T = extended hours, others raw. */
+function fmtCond(c: string | null | undefined): string {
+  if (!c) return "";
+  if (c === "@") return "";       // regular — implied
+  if (c === "T") return "EXT";    // extended hours (pre/post)
+  return c;
 }
 
 export default function TradesTape() {
@@ -29,24 +28,37 @@ export default function TradesTape() {
   const prevClose = quote?.prevClose ?? null;
   const tz = quote?.marketTimezone ?? "America/New_York";
 
-  // Newest deal on the left; cap the visible strip for performance.
-  const recent = trades.length ? [...trades].slice(-50).reverse() : [];
+  // Newest on the left — cap at 60, show real bar-level data.
+  const recent = trades.length ? [...trades].slice(-60).reverse() : [];
 
-  // Duplicate list for seamless marquee loop (needs at least 2 * width).
-  const marqueeItems = recent.length > 2 ? [...recent, ...recent] : recent;
+  // When market is closed and no fresh bars, the tape should be empty —
+  // honest and not misleading.
+  if (recent.length === 0) {
+    return (
+      <section className="panel tape tape-horizontal">
+        <div className="panel-title">Time &amp; Sales</div>
+        <div className="tape-track-wrap">
+          <div className="tape-track">
+            <div className="muted tape-empty">No trades — market closed</div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="panel tape tape-horizontal">
-      <div className="panel-title">Time &amp; Sales</div>
+      <div className="panel-title">
+        Time &amp; Sales
+        <span className="tape-live-dot" title="Data from real 1‑min bars">●</span>
+      </div>
       <div
         className={`tape-track-wrap ${recent.length > 2 ? "marquee" : ""}`}
       >
         <div className="tape-track">
-          {marqueeItems.length === 0 && (
-            <div className="muted tape-empty">Waiting for live trades…</div>
-          )}
-          {marqueeItems.map((t, i) => {
+          {recent.map((t, i) => {
             const up = prevClose != null ? t.price >= prevClose : t.price >= 0;
+            const size = (t.size ?? 0) > 0 ? fmtInt(t.size) : null;
             return (
               <div
                 className={`deal ${up ? "up" : "down"}`}
@@ -55,12 +67,13 @@ export default function TradesTape() {
                 <div className="deal-top">
                   <span className="deal-arrow">{up ? "▲" : "▼"}</span>
                   <span className="deal-price">{fmtPrice(t.price)}</span>
-                  <span className={`deal-badge ${up ? "up" : "down"}`}>
-                    {fmtExchange(t.exchange)}
-                  </span>
+                  {fmtCond(t.condition) && (
+                    <span className="deal-cond">{fmtCond(t.condition)}</span>
+                  )}
                 </div>
                 <div className="deal-bottom">
-                  <span className="deal-size">{fmtInt(t.size)}</span>
+                  {size && <span className="deal-size">×{size}</span>}
+                  <span className="deal-exch">{fmtExchange(t.exchange)}</span>
                   <span className="deal-time">{fmtET(t.timestamp, tz)}</span>
                 </div>
               </div>

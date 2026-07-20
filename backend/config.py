@@ -39,16 +39,22 @@ MARKETS: dict[str, dict[str, str]] = {
         "timezone": "America/New_York",
         "display": "NasdaqGS",
         "currency": "USD",
+        "city": "New York",
+        "flag": "🇺🇸",
     },
     "TSE": {
         "timezone": "Asia/Tokyo",
         "display": "TSE",
         "currency": "JPY",
+        "city": "Tokyo",
+        "flag": "🇯🇵",
     },
     "LSE": {
         "timezone": "Europe/London",
         "display": "LSE",
         "currency": "GBP",
+        "city": "London",
+        "flag": "🇬🇧",
     },
     # Add more markets here as needed (e.g. "FRA", "HKEX", "EURONEXT") …
 }

@@ -21,3 +21,4 @@ frontend/.env*.local
 Thumbs.db
 *.log
 .github/skills/
+develop.md

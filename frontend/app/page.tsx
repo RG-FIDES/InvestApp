@@ -11,8 +11,9 @@ import KeyStats from "./components/KeyStats";
 import ComparisonPanel from "./components/ComparisonPanel";
 import NbboPanel from "./components/NbboPanel";
 import TradesTape from "./components/TradesTape";
-import AlertControl from "./components/AlertControl";
 import OverviewPanel from "./components/OverviewPanel";
+import NotificationToast from "./components/NotificationToast";
+import AlertsPanel from "./components/AlertsPanel";
 
 export default function Home() {
   useMarketData();
@@ -43,12 +44,13 @@ export default function Home() {
                 <KeyStats />
                 <ComparisonPanel />
                 <NbboPanel />
-                <AlertControl />
+                <AlertsPanel />
               </aside>
             </div>
           </main>
         </div>
       </div>
+      <NotificationToast />
     </div>
   );
 }

@@ -94,6 +94,7 @@ async def _create_schema(conn: aiosqlite.Connection) -> None:
             symbol      TEXT NOT NULL,
             timestamp   TEXT NOT NULL,
             price       REAL NOT NULL,
+            current_price REAL,
             change      REAL,
             change_pct  REAL,
             prev_close  REAL,
@@ -150,21 +151,21 @@ async def insert_bar(symbol: str, timestamp, open_, high, low, close, volume) ->
     await conn.commit()
 
 
-async def insert_quote(symbol: str, timestamp, price, change, change_pct, prev_close,
+async def insert_quote(symbol: str, timestamp, price, current_price, change, change_pct, prev_close,
                        open_, day_high, day_low, bid, ask, bid_size, ask_size,
                        volume, market_state, as_of) -> None:
     conn = get_connection()
     await conn.execute(
         """
         INSERT INTO mu_quotes
-            (symbol, timestamp, price, change, change_pct, prev_close, open,
+            (symbol, timestamp, price, current_price, change, change_pct, prev_close, open,
              day_high, day_low, bid, ask, bid_size, ask_size, volume, market_state, as_of)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (symbol, _to_iso(timestamp), float(price), _none(change), _none(change_pct),
-         _none(prev_close), _none(open_), _none(day_high), _none(day_low),
-         _none(bid), _none(ask), _none(bid_size), _none(ask_size), _none(volume),
-         market_state, as_of),
+        (symbol, _to_iso(timestamp), float(price), _none(current_price),
+         _none(change), _none(change_pct), _none(prev_close), _none(open_),
+         _none(day_high), _none(day_low), _none(bid), _none(ask),
+         _none(bid_size), _none(ask_size), _none(volume), market_state, as_of),
     )
     await conn.commit()
 
@@ -208,7 +209,7 @@ async def get_latest_quote(symbol: str = DEFAULT_SYMBOL):
     """Most recent quote snapshot (None if no quotes yet)."""
     conn = get_connection()
     async with conn.execute(
-        "SELECT id, symbol, timestamp, price, change, change_pct, prev_close, open, "
+        "SELECT id, symbol, timestamp, price, current_price, change, change_pct, prev_close, open, "
         "day_high, day_low, bid, ask, bid_size, ask_size, volume, market_state, as_of "
         "FROM mu_quotes WHERE symbol = ? ORDER BY id DESC LIMIT 1",
         (symbol,),
@@ -216,9 +217,9 @@ async def get_latest_quote(symbol: str = DEFAULT_SYMBOL):
         row = await cur.fetchone()
     if not row:
         return None
-    cols = ("id", "symbol", "timestamp", "price", "change", "change_pct", "prev_close",
-            "open", "day_high", "day_low", "bid", "ask", "bid_size", "ask_size",
-            "volume", "market_state", "as_of")
+    cols = ("id", "symbol", "timestamp", "price", "current_price", "change", "change_pct",
+            "prev_close", "open", "day_high", "day_low", "bid", "ask", "bid_size",
+            "ask_size", "volume", "market_state", "as_of")
     return dict(zip(cols, row))
 
 
