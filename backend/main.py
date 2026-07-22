@@ -38,7 +38,8 @@ import feed
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("server")
 
-FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")
+_CORS_ORIGINS = [o.strip() for o in os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000").split(",") if o.strip()]
+FRONTEND_ORIGIN = _CORS_ORIGINS[0] if _CORS_ORIGINS else "http://localhost:3000"
 
 broadcast_queue: Optional[asyncio.Queue] = None
 active_connections: set[WebSocket] = set()
@@ -411,7 +412,7 @@ app = FastAPI(title="InvestApp", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_ORIGIN],
+    allow_origins=_CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
