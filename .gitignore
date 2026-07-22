@@ -22,3 +22,5 @@ Thumbs.db
 *.log
 .github/skills/
 develop.md
+
+!.github/workflows/
