@@ -13,6 +13,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@v1
+      - run: pwd && ls -la
+        working-directory: ./backend
       - run: flyctl deploy --remote-only
         working-directory: ./backend
         env:
