@@ -1,0 +1,15 @@
+node_modules
+.git
+.venv
+__pycache__
+*.pyc
+.next
+out
+dist
+build
+.ollama
+.gradle
+.android
+AppData
+.memories
+.dockerignore
