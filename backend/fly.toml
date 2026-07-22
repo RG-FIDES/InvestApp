@@ -1,4 +1,4 @@
-app = "investapp-backend"
+app = "investapp"
 
 [build]
 dockerfile = "Dockerfile"
