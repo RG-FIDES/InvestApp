@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: investapp-backend
+    runtime: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    region: frankfurt
+    envVars:
+      - key: SYMBOL
+        value: MU
+      - key: MARKET
+        value: US
+      - key: FRONTEND_ORIGIN
+        value: https://investapp-8icmvwewu-oleksandkovs-projects.vercel.app
+      - key: MARKET_DB_PATH
+        value: /app/market_data.db
