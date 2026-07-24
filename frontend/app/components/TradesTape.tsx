@@ -50,7 +50,7 @@ export default function TradesTape() {
     <section className="panel tape tape-horizontal">
       <div className="panel-title">
         Time &amp; Sales
-        <span className="tape-live-dot" title="Data from real 1‑min bars">●</span>
+        <span className="tape-live-dot" title="Live trade prints (Finnhub real-time when configured, otherwise Yahoo 1-min bars)">●</span>
       </div>
       <div
         className={`tape-track-wrap ${recent.length > 2 ? "marquee" : ""}`}

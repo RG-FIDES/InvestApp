@@ -33,6 +33,11 @@ from datetime import datetime, timedelta, timezone
 import config
 import db
 
+from dotenv import load_dotenv
+import os
+import json
+import websockets
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("feed")
 
@@ -42,6 +47,7 @@ log = logging.getLogger("feed")
 # streaming a different stock.
 SYMBOL = config.SYMBOL
 _HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 
 
 def _chart_url(symbol: str) -> str:
@@ -260,6 +266,133 @@ async def get_meta(symbol: str | None = None) -> dict:
 # Best-effort fundamentals cache (quoteSummary) for non-default symbols.
 _fundamentals_cache: dict[str, dict] = {}
 
+_finnhub_active = False
+
+
+def is_finnhub_active() -> bool:
+    return _finnhub_active
+
+
+def _set_finnhub_active(active: bool) -> None:
+    global _finnhub_active
+    _finnhub_active = active
+
+
+class FinnhubTapeClient:
+    """WebSocket client that streams real trade prints from Finnhub and
+    forwards them into the same broadcast queue used by the Yahoo feed.
+
+    The free Finnhub tier streams US-equity trades only.  For non-US symbols
+    the client connects but receives no data, which is harmless.
+    """
+
+    def __init__(self, api_key: str, symbol: str, queue: asyncio.Queue) -> None:
+        self.api_key = api_key
+        self.symbol = symbol
+        self.queue = queue
+        self._task: Optional[asyncio.Task] = None
+        self._stop = asyncio.Event()
+        self._reconnect_delay = 3.0
+
+    async def start(self) -> None:
+        self._task = asyncio.create_task(self._run_loop())
+
+    async def stop(self) -> None:
+        self._stop.set()
+        if self._task is not None:
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+            self._task = None
+
+    async def _run_loop(self) -> None:
+        _set_finnhub_active(True)
+        url = f"wss://ws.finnhub.io?token={self.api_key}"
+        while not self._stop.is_set():
+            try:
+                async with websockets.connect(
+                    url,
+                    ping_interval=20,
+                    ping_timeout=20,
+                    close_timeout=5,
+                ) as ws:
+                    await ws.send(json.dumps({
+                        "type": "subscribe",
+                        "symbol": self.symbol,
+                    }))
+                    async for raw in ws:
+                        msg = json.loads(raw)
+                        if msg.get("type") != "trade":
+                            continue
+                        for tick in msg.get("data", []):
+                            await self._forward_tick(tick)
+            except asyncio.CancelledError:
+                break
+            except Exception as exc:  # noqa: BLE001
+                msg = str(exc)
+                if "429" in msg:
+                    self._reconnect_delay = min(self._reconnect_delay * 2, 30)
+                    log.warning("Finnhub rate-limited (429); backing off %.1fs.", self._reconnect_delay)
+                else:
+                    self._reconnect_delay = 3.0
+                    log.warning("Finnhub WS error (%s); reconnecting in %.1fs.", exc, self._reconnect_delay)
+                try:
+                    await asyncio.wait_for(self._stop.wait(), timeout=self._reconnect_delay)
+                    break
+                except asyncio.TimeoutError:
+                    continue
+            finally:
+                _set_finnhub_active(False)
+
+    async def _forward_tick(self, tick: dict) -> None:
+        price = tick.get("p")
+        volume = tick.get("v", 0)
+        ts_ms = tick.get("t")
+        conds = tick.get("c", [])
+        condition = conds[0] if conds else "T"
+
+        if price is None or ts_ms is None:
+            return
+
+        ts = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+        symbol = tick.get("s") or self.symbol
+        raw_ex = _meta_cache.get(symbol, {}).get("exchange", "") or config.MARKET_DISPLAY
+        ex = _map_exchange_code(raw_ex)
+
+        try:
+            await db.insert_trade(symbol, ts, float(price), int(volume), ex, condition)
+        except Exception:  # noqa: BLE001
+            pass
+
+        await self.queue.put({
+            "type": "trade",
+            "symbol": symbol,
+            "timestamp": ts.isoformat(),
+            "price": float(price),
+            "size": int(volume),
+            "exchange": ex,
+            "condition": condition,
+        })
+
+
+def _exchange_to_market_code(raw: str) -> str | None:
+    """Map a Yahoo exchange name to an InvestApp market code ("US", "NYSE", "TSE", "LSE").
+    Returns ``None`` when the exchange does not match any registered market."""
+    if not raw:
+        return None
+    r = raw.upper()
+    if any(k in r for k in ("NASDAQ", "NMS", "ARCA", "AMEX", "BATS", "BZX")):
+        return "US"
+    if any(k in r for k in ("NYSE", "NYQ")):
+        return "NYSE"
+    if any(k in r for k in ("TSE", "TOKYO")):
+        return "TSE"
+    if any(k in r for k in ("LSE", "LONDON")):
+        return "LSE"
+    return None
+
 
 def _map_exchange_code(raw: str) -> str:
     """Map a Yahoo exchange name to a usable tape/MIC code for trade prints."""
@@ -291,8 +424,10 @@ def _map_exchange_code(raw: str) -> str:
     return "XNAS"
 
 
-def search_symbols(query: str, limit: int = 10) -> list[dict]:
-    """Synchronous Yahoo symbol search (call via asyncio.to_thread)."""
+def search_symbols(query: str, limit: int = 10, market_code: str | None = None) -> list[dict]:
+    """Synchronous Yahoo symbol search (call via asyncio.to_thread).
+    When ``market_code`` is provided, only results whose exchange maps to that
+    market are returned."""
     import requests
 
     q = (query or "").strip()
@@ -312,6 +447,10 @@ def search_symbols(query: str, limit: int = 10) -> list[dict]:
     for item in quotes:
         if item.get("quoteType") not in ("EQUITY", "ETF"):
             continue
+        if market_code:
+            ex = item.get("exchange", "")
+            if _exchange_to_market_code(ex) != market_code:
+                continue
         out.append({
             "symbol": item.get("symbol", ""),
             "name": item.get("shortname") or item.get("longname") or item.get("symbol", ""),
@@ -669,45 +808,48 @@ async def run_feed(queue: asyncio.Queue, interval: float = POLL_INTERVAL) -> Non
                 "timestamp": minute.isoformat(),
                 "open": o, "high": h, "low": l, "close": c, "volume": v,
             })
-            # --- Push real trade data from 1-min bars ----------------------------
-            # The free Yahoo chart API does not provide tick-level trade data.
-            # Instead of faking prints, we use the actual 1-minute OHLCV bars
-            # which ARE real aggregated market data — each bar's close and
-            # volume represent actual trades that occurred in that minute.
-            # Only new bars (timestamp >= last pushed) are emitted as prints.
-            # When the market is closed and no new bars exist, the tape simply
-            # stops — honest and not misleading.
+            # --- Push real trade data -------------------------------------------
+            # When Finnhub is connected and streaming real ticks, skip the
+            # synthetic 1-minute-bar trades to avoid duplicates in the tape.
+            if not is_finnhub_active():
+                # The free Yahoo chart API does not provide tick-level trade data.
+                # Instead of faking prints, we use the actual 1-minute OHLCV bars
+                # which ARE real aggregated market data — each bar's close and
+                # volume represent actual trades that occurred in that minute.
+                # Only new bars (timestamp >= last pushed) are emitted as prints.
+                # When the market is closed and no new bars exist, the tape simply
+                # stops — honest and not misleading.
 
-            # Determine which bars are new since the last poll.
-            now_utc = datetime.now(timezone.utc)
-            _bars = snap.get("bars", [])
-            _state = snap.get("market_state", "CLOSED")
-            _ex_raw = snap.get("exchange", "")
-            _ex_code = _map_exchange_code(_ex_raw)
+                # Determine which bars are new since the last poll.
+                now_utc = datetime.now(timezone.utc)
+                _bars = snap.get("bars", [])
+                _state = snap.get("market_state", "CLOSED")
+                _ex_raw = snap.get("exchange", "")
+                _ex_code = _map_exchange_code(_ex_raw)
 
-            # Only push bars from the last POLL_INTERVAL * 2 seconds (≈6s window).
-            # During active trading this typically yields 1‑2 new bars per poll.
-            _cutoff = now_utc - timedelta(seconds=POLL_INTERVAL * 2.5)
-            _fresh = [b for b in _bars if b["timestamp"] >= _cutoff]
+                # Only push bars from the last POLL_INTERVAL * 2 seconds (≈6s window).
+                # During active trading this typically yields 1‑2 new bars per poll.
+                _cutoff = now_utc - timedelta(seconds=POLL_INTERVAL * 2.5)
+                _fresh = [b for b in _bars if b["timestamp"] >= _cutoff]
 
-            # If no fresh bars (closed market / overnight), push nothing.
-            # The tape will naturally empty out.
-            for _bar in _fresh:
-                _ts = _bar["timestamp"]
-                _close = _bar["close"]
-                _vol = _bar.get("volume", 0)
-                _cond = "@" if _state == "REGULAR" else "T"
+                # If no fresh bars (closed market / overnight), push nothing.
+                # The tape will naturally empty out.
+                for _bar in _fresh:
+                    _ts = _bar["timestamp"]
+                    _close = _bar["close"]
+                    _vol = _bar.get("volume", 0)
+                    _cond = "@" if _state == "REGULAR" else "T"
 
-                await db.insert_trade(symbol, _ts, _close, _vol, _ex_code, _cond)
-                await queue.put({
-                    "type": "trade",
-                    "symbol": symbol,
-                    "timestamp": _ts.isoformat(),
-                    "price": _close,
-                    "size": _vol,
-                    "exchange": _ex_code,
-                    "condition": _cond,
-                })
+                    await db.insert_trade(symbol, _ts, _close, _vol, _ex_code, _cond)
+                    await queue.put({
+                        "type": "trade",
+                        "symbol": symbol,
+                        "timestamp": _ts.isoformat(),
+                        "price": _close,
+                        "size": _vol,
+                        "exchange": _ex_code,
+                        "condition": _cond,
+                    })
 
             await asyncio.sleep(interval)
         except asyncio.CancelledError:

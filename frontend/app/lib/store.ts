@@ -160,8 +160,13 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   },
   addTrackedStock: (stock) =>
     set((s) => {
-      if (s.trackedStocks.some((t) => t.symbol === stock.symbol)) return {};
-      const next = [...s.trackedStocks, stock];
+      const existing = s.trackedStocks.find((t) => t.symbol === stock.symbol);
+      if (existing) {
+        if (existing.market && stock.market) return {};
+      }
+      const next = existing
+        ? s.trackedStocks.map((t) => t.symbol === stock.symbol ? { ...t, ...stock } : t)
+        : [...s.trackedStocks, stock];
       saveSettings({ trackedStocks: next });
       return { trackedStocks: next };
     }),

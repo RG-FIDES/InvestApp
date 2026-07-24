@@ -5,6 +5,24 @@ import { useMarketStore } from "../lib/store";
 import { fetchMarkets, searchSymbols, setActiveSymbol } from "../lib/api";
 import { getLocalMarketState, marketStateLabel } from "../lib/types";
 
+function _detectMarket(exchange: string | undefined): string {
+  if (!exchange) return "";
+  const e = exchange.toUpperCase();
+  if (e.includes("NASDAQ") || e.includes("NMS") || e.includes("ARCA") || e.includes("AMEX") || e.includes("BATS") || e.includes("BZX")) {
+    return "US";
+  }
+  if (e.includes("NYSE") || e.includes("NYQ")) {
+    return "NYSE";
+  }
+  if (e.includes("TSE") || e.includes("TOKYO")) {
+    return "TSE";
+  }
+  if (e.includes("LSE") || e.includes("LONDON")) {
+    return "LSE";
+  }
+  return "";
+}
+
 export default function Watchlist() {
   const markets = useMarketStore((s) => s.markets);
   const setMarkets = useMarketStore((s) => s.setMarkets);
@@ -46,7 +64,7 @@ export default function Watchlist() {
     setSearching(true);
     searchTimer.current = setTimeout(async () => {
       try {
-        const results = await searchSymbols(q, 8);
+        const results = await searchSymbols(q, 8, selectedMarket || undefined);
         setSearchResults(results);
       } catch {
         setSearchResults([]);
@@ -71,7 +89,8 @@ export default function Watchlist() {
   }, []);
 
   const handleSelectResult = async (r: { symbol: string; name: string; exchange: string }) => {
-    addTrackedStock({ symbol: r.symbol, name: r.name, market: selectedMarket });
+    const market = selectedMarket || _detectMarket(r.exchange);
+    addTrackedStock({ symbol: r.symbol, name: r.name, market });
     setSearchQuery("");
     setSearchResults([]);
     setShowResults(false);
@@ -88,12 +107,13 @@ export default function Watchlist() {
   };
 
   const filtered = selectedMarket
-    ? trackedStocks.filter((t) => t.market === selectedMarket || t.market === "")
+    ? trackedStocks.filter((t) => t.market === selectedMarket)
     : trackedStocks;
 
-  /** Count of tracked stocks belonging to a given market code (plus unsorted). */
-  const countForMarket = (code: string) =>
-    trackedStocks.filter((t) => t.market === code || (code === "" && !t.market)).length;
+  const countForMarket = (code: string) => {
+    if (code === "") return trackedStocks.length;
+    return trackedStocks.filter((t) => t.market === code).length;
+  };
 
   const marketEntries = [["", { display: "All Exchanges", city: "Global", flag: "🏛️", currency: "", timezone: "" }] as const,
     ...Object.entries(markets)] as const;

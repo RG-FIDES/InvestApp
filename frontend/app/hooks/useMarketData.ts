@@ -7,12 +7,23 @@ import { wsSender } from "../lib/wsSender";
 import { useMarketStore } from "../lib/store";
 import type { Bar, CustomNotification, NotificationItem, Quote, Trade, ChartRange } from "../lib/types";
 
+function _detectMarket(exchange: string | undefined): string {
+  if (!exchange) return "";
+  const e = exchange.toUpperCase();
+  if (e.includes("NASDAQ") || e.includes("NMS") || e.includes("ARCA") || e.includes("AMEX") || e.includes("BATS") || e.includes("BZX")) return "US";
+  if (e.includes("NYSE") || e.includes("NYQ")) return "NYSE";
+  if (e.includes("TSE") || e.includes("TOKYO")) return "TSE";
+  if (e.includes("LSE") || e.includes("LONDON")) return "LSE";
+  return "";
+}
+
 /**
  * Wires the REST seed (quote + history) and the live WebSocket into the
  * zustand store. Mount once (in the page). Auto-reconnects via lib/ws.
  */
 export function useMarketData() {
   const setQuote = useMarketStore((s) => s.setQuote);
+  const quote = useMarketStore((s) => s.quote);
   const patchQuote = useMarketStore((s) => s.patchQuote);
   const setBars = useMarketStore((s) => s.setBars);
   const addTrade = useMarketStore((s) => s.addTrade);
@@ -258,4 +269,15 @@ export function useMarketData() {
       clearInterval(id);
     };
   }, [setQuote]);
+
+  // Auto-tag untagged tracked stocks once we learn their exchange from the quote.
+  useEffect(() => {
+    const q = useMarketStore.getState().quote;
+    if (!q || !q.symbol) return;
+    const tracked = useMarketStore.getState().trackedStocks.find((t) => t.symbol === q.symbol && !t.market);
+    if (!tracked) return;
+    const market = _detectMarket(q.exchange);
+    if (!market) return;
+    useMarketStore.getState().addTrackedStock({ ...tracked, market });
+  }, [activeSymbol]);
 }

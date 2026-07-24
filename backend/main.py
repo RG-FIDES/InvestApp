@@ -46,6 +46,7 @@ active_connections: set[WebSocket] = set()
 connection_alerts: dict[WebSocket, float] = {}
 connection_custom_notifications: dict[WebSocket, dict[str, dict]] = {}
 prev_close: Optional[float] = None  # for alert cross-detection
+finnhub_client: Optional[feed.FinnhubTapeClient] = None
 
 # Notification tracking — compared against each incoming quote to detect
 # meaningful events (day high/low broken, volume spikes, market transitions,
@@ -383,7 +384,7 @@ def reset_event_tracking() -> None:
 # --------------------------------------------------------------------------- #
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global broadcast_queue, prev_close
+    global broadcast_queue, prev_close, finnhub_client
     await db.init_db()
     broadcast_queue = asyncio.Queue(maxsize=10_000)
 
@@ -397,12 +398,18 @@ async def lifespan(app: FastAPI):
     ingest_task = asyncio.create_task(feed.run_feed(broadcast_queue))
     bcast_task = asyncio.create_task(broadcaster())
 
+    if feed.FINNHUB_API_KEY:
+        finnhub_client = feed.FinnhubTapeClient(feed.FINNHUB_API_KEY, feed.SYMBOL, broadcast_queue)
+        await finnhub_client.start()
+
     log.info("InvestApp backend started (Yahoo Finance feed, symbol=%s).", feed.SYMBOL)
     try:
         yield
     finally:
         ingest_task.cancel()
         bcast_task.cancel()
+        if finnhub_client is not None:
+            await finnhub_client.stop()
         await asyncio.gather(ingest_task, bcast_task, return_exceptions=True)
         await db.close_db()
         log.info("InvestApp backend stopped.")
@@ -562,15 +569,19 @@ async def api_get_symbol():
 @app.post("/api/symbol")
 async def api_set_symbol(body: dict):
     """Switch the tracked symbol. Re-seeds history for the new instrument,
-    resets event-tracking baselines, and broadcasts a ``symbol_changed``
-    message so every connected client re-fetches its quote/history."""
+    resets event-tracking baselines, restarts the Finnhub subscription if
+    active, and broadcasts a ``symbol_changed`` message so every connected
+    client re-fetches its quote/history."""
+    global finnhub_client
     new_symbol = (body.get("symbol") or "").strip().upper()
     if not new_symbol:
         return {"ok": False, "error": "symbol required"}
     new_symbol = feed.switch_symbol(new_symbol)
     reset_event_tracking()
-    # Re-seed intraday bars + daily history for the new symbol in the background
-    # so the first client re-fetch is fast.
+    if finnhub_client is not None:
+        await finnhub_client.stop()
+        finnhub_client = feed.FinnhubTapeClient(feed.FINNHUB_API_KEY, new_symbol, broadcast_queue)
+        await finnhub_client.start()
     asyncio.create_task(_reseed_and_broadcast(new_symbol))
     return {"ok": True, "symbol": new_symbol}
 
@@ -585,9 +596,11 @@ async def _reseed_and_broadcast(symbol: str) -> None:
 
 
 @app.get("/api/search")
-async def api_search(q: str = "", limit: int = 10):
-    """Search Yahoo Finance for instruments matching `q`."""
-    results = await asyncio.to_thread(feed.search_symbols, q, limit)
+async def api_search(q: str = "", limit: int = 10, market: str = ""):
+    """Search Yahoo Finance for instruments matching `q`. When `market` is
+    provided (e.g. "US", "TSE", "LSE"), only results from that market's
+    exchanges are returned."""
+    results = await asyncio.to_thread(feed.search_symbols, q, limit, market or None)
     return {"results": results}
 
 

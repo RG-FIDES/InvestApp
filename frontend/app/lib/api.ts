@@ -28,8 +28,14 @@ export async function fetchMarkets(): Promise<Record<string, Market>> {
   return res.json();
 }
 
-export async function searchSymbols(q: string, limit = 10): Promise<SearchResult[]> {
-  const res = await fetch(`${API_URL}/api/search?q=${encodeURIComponent(q)}&limit=${limit}`);
+export async function searchSymbols(q: string, limit = 10, market?: string): Promise<SearchResult[]> {
+  const url = new URL(`${API_URL}/api/search`);
+  url.searchParams.set("q", q);
+  url.searchParams.set("limit", String(limit));
+  if (market) {
+    url.searchParams.set("market", market);
+  }
+  const res = await fetch(url.toString());
   if (!res.ok) throw new Error(`/api/search ${res.status}`);
   const data = await res.json();
   return data.results ?? [];

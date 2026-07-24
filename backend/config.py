@@ -42,6 +42,13 @@ MARKETS: dict[str, dict[str, str]] = {
         "city": "New York",
         "flag": "🇺🇸",
     },
+    "NYSE": {
+        "timezone": "America/New_York",
+        "display": "NYSE",
+        "currency": "USD",
+        "city": "New York",
+        "flag": "🇺🇸",
+    },
     "TSE": {
         "timezone": "Asia/Tokyo",
         "display": "TSE",
